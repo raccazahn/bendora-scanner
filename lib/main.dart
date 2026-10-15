@@ -1,27 +1,84 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/login_screen.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env");
-  runApp(const BendoraScannerApp());
+void main() {
+  // Catch all uncaught errors
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint('Flutter Error: ${details.exception}');
+    debugPrint('Stack trace: ${details.stack}');
+  };
+
+  runApp(
+    MaterialApp(
+      title: 'Bendora Scanner',
+      debugShowCheckedModeBanner: false,
+      home: const ErrorBoundary(child: LoginScreen()),
+    ),
+  );
 }
 
-class BendoraScannerApp extends StatelessWidget {
-  const BendoraScannerApp({super.key});
+// Widget that catches all errors and displays them
+class ErrorBoundary extends StatefulWidget {
+  final Widget child;
+  const ErrorBoundary({super.key, required this.child});
+
+  @override
+  State<ErrorBoundary> createState() => _ErrorBoundaryState();
+}
+
+class _ErrorBoundaryState extends State<ErrorBoundary> {
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    // Catch any async errors
+    PlatformDispatcher.instance.onError = (error, stack) {
+      setState(() {
+        _error = '$error\n\n$stack';
+      });
+      return true; // Prevent app crash
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Bendora Scanner',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFFF8F9FA),
-      ),
-      home: const LoginScreen(),
-    );
+    if (_error != null) {
+      return Scaffold(
+        backgroundColor: Colors.red.shade50,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                const SizedBox(height: 16),
+                const Text(
+                  'App Error',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => setState(() => _error = null),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    return widget.child;
   }
 }
