@@ -1,8 +1,9 @@
+import 'dart:ui'; // <-- Added this import
 import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
 
 void main() {
-  // Catch all uncaught errors
+  // Catch all uncaught Flutter errors
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
     debugPrint('Flutter Error: ${details.exception}');
@@ -10,15 +11,15 @@ void main() {
   };
 
   runApp(
-    MaterialApp(
+    const MaterialApp(
       title: 'Bendora Scanner',
       debugShowCheckedModeBanner: false,
-      home: const ErrorBoundary(child: LoginScreen()),
+      home: ErrorBoundary(child: LoginScreen()),
     ),
   );
 }
 
-// Widget that catches all errors and displays them
+// Widget that catches all errors and displays them on screen
 class ErrorBoundary extends StatefulWidget {
   final Widget child;
   const ErrorBoundary({super.key, required this.child});
