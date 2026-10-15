@@ -15,17 +15,18 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   String? _errorMessage;
 
-  Future<void> _login() async {
-    if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
-      setState(() => _errorMessage = 'Please enter username and password');
-      return;
-    }
+ Future<void> _login() async {
+  if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
+    setState(() => _errorMessage = 'Please enter username and password');
+    return;
+  }
 
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+  setState(() {
+    _isLoading = true;
+    _errorMessage = null;
+  });
 
+  try {
     final result = await ApiService.login(
       _usernameController.text.trim(),
       _passwordController.text,
@@ -52,8 +53,14 @@ class _LoginScreenState extends State<LoginScreen> {
         _errorMessage = 'Invalid credentials or network error.';
       });
     }
+  } catch (e) {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      _errorMessage = 'Cannot connect to server. Please check your connection.';
+    });
   }
-
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(
