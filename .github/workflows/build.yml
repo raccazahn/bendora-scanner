@@ -16,12 +16,6 @@ jobs:
     - name: Install dependencies
       run: flutter pub get
       
-    - name: Upgrade Gradle Wrapper
-      run: |
-        cd android
-        chmod +x gradlew
-        ./gradlew wrapper --gradle-version=8.5
-        
     - name: Build Debug APK
       run: flutter build apk --debug
       
