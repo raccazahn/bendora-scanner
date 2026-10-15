@@ -7,7 +7,7 @@ plugins {
 android {
     namespace = "com.example.scanner"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973" // <-- ADD THIS LINE EXACTLY LIKE THIS
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
