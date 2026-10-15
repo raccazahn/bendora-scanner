@@ -20,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   bool _isDownloading = false;
   bool _isOnline = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -36,8 +37,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-    
+  setState(() => _isLoading = true);
+  
+  try {
     final assignment = await ApiService.getAssignment();
     final pack = await _db.getEventPack();
     
@@ -46,7 +48,14 @@ class _HomeScreenState extends State<HomeScreen> {
       _eventPack = pack;
       _isLoading = false;
     });
+  } catch (e) {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      _errorMessage = 'Cannot connect to server. Please check your connection.';
+    });
   }
+}
 
   Future<void> _downloadEventPack() async {
     setState(() => _isDownloading = true);
@@ -117,6 +126,34 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+
+              if (_errorMessage != null) {
+  return Scaffold(
+    appBar: AppBar(title: const Text('Scanner Home')),
+    body: Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.cloud_off, size: 64, color: Colors.orange.shade700),
+            const SizedBox(height: 16),
+            Text(
+              _errorMessage!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _loadData,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
               
               // Event Pack Card
               Card(
