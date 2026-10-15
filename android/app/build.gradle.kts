@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.scanner"
+    namespace = "com.bendora.scanner"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973" // <-- ADD THIS LINE EXACTLY LIKE THIS
 
@@ -19,7 +19,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.scanner"
+        applicationId = "com.bendora.scanner"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
