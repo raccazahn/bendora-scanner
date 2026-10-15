@@ -20,7 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   bool _isDownloading = false;
   bool _isOnline = true;
-  String? _errorMessage;
+  String? _errorMessage; // Added to handle connection errors
 
   @override
   void initState() {
@@ -37,41 +37,54 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadData() async {
-  setState(() => _isLoading = true);
-  
-  try {
-    final assignment = await ApiService.getAssignment();
-    final pack = await _db.getEventPack();
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
     
-    setState(() {
-      _assignment = assignment;
-      _eventPack = pack;
-      _isLoading = false;
-    });
-  } catch (e) {
-    if (!mounted) return;
-    setState(() {
-      _isLoading = false;
-      _errorMessage = 'Cannot connect to server. Please check your connection.';
-    });
+    try {
+      final assignment = await ApiService.getAssignment();
+      final pack = await _db.getEventPack();
+      
+      if (!mounted) return;
+      setState(() {
+        _assignment = assignment;
+        _eventPack = pack;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Cannot connect to server.\nPlease check your Wi-Fi and ensure the backend is running on your computer.';
+      });
+    }
   }
-}
 
   Future<void> _downloadEventPack() async {
     setState(() => _isDownloading = true);
     
-    final currentVersion = await _db.getCurrentPackVersion();
-    final newPack = await ApiService.getEventPack(currentVersion);
-    
-    if (newPack != null) {
-      await _db.saveEventPackTransactionally(newPack);
+    try {
+      final currentVersion = await _db.getCurrentPackVersion();
+      final newPack = await ApiService.getEventPack(currentVersion);
+      
+      if (newPack != null) {
+        await _db.saveEventPackTransactionally(newPack);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Event Pack updated successfully!')),
+        );
+        await _loadData();
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Event Pack is already up to date.')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Event Pack updated successfully!')),
-      );
-      await _loadData();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Event Pack is already up to date.')),
+        const SnackBar(content: Text('Failed to download. Check your connection.')),
       );
     }
     
@@ -82,15 +95,47 @@ class _HomeScreenState extends State<HomeScreen> {
     await ApiService.clearToken();
     await _db.clearDatabase();
     if (!mounted) return;
-    Navigator.of(context).pushReplacementNamed('/'); // Or rebuild with LoginScreen
+    Navigator.of(context).pushReplacementNamed('/'); 
   }
 
   @override
   Widget build(BuildContext context) {
+    // 1. Loading State
     if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    // 2. Error State (NEW: Prevents crashing if backend is offline)
+    if (_errorMessage != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Scanner Home')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.cloud_off, size: 64, color: Colors.orange.shade700),
+                const SizedBox(height: 16),
+                Text(
+                  _errorMessage!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16, color: Colors.black87),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: _loadData,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry Connection'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // 3. Normal State
     final isReady = _eventPack != null && _assignment != null;
 
     return Scaffold(
@@ -126,34 +171,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-
-              if (_errorMessage != null) {
-  return Scaffold(
-    appBar: AppBar(title: const Text('Scanner Home')),
-    body: Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.cloud_off, size: 64, color: Colors.orange.shade700),
-            const SizedBox(height: 16),
-            Text(
-              _errorMessage!,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _loadData,
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
               
               // Event Pack Card
               Card(
